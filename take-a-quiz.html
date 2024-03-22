@@ -4,8 +4,217 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Document</title>
+  <link rel="stylesheet" href="navbar.css">
+  <link rel="stylesheet" href="general.css">
+  <link rel = "stylesheet" href = "containers.css">
 </head>
 <body>
-  
+
+  <ul class="topnav" id = "navbar">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="add-question.html">Add questions</a></li>
+    <li><a href="make-a-quiz.html">Create a quiz</a></li>
+    <li><a class = "active" href="take-a-quiz.html">Take a quiz</a></li>
+    <li class="right"><a href="#about">About</a></li>
+  </ul>
+
+  <div class = "container" id = "quizzes">
+    <h3> Here is the list of all available quizzes. Click on a quiz to start taking the quiz. </h3>
+  </div>
+
+  <div class = "container" id = "quizContainer" style = "display: none;">
+    <div id = questionContainer>
+      <div id = "choicesContainer">
+
+      </div>
+    </div>
+  </div>
+
+  <div class = "final-container" id = "final-screen">
+    
+  </div>
+
+  <script>
+
+    let quizzes = [];
+    let quizQuestions = [];
+    let selectedAnswers = [];
+    let questionScores = [];
+    let host = "https://midterm-latest-vz19.onrender.com"
+    let currentQuizIndex = null;
+    let currentQuestionIndex = null;
+    let navbar = document.getElementById("navbar");
+    let quizContainer = document.getElementById("quizContainer");
+    let optionsContainer = document.getElementById("choicesContainer");
+    let prevButton = document.getElementById("prevButton");
+    let nextButton = document.getElementById("nextButton");
+
+    getAllQuizzes();
+
+    async function retreiveQuizzes() {
+      let request = {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json"
+        }
+      }
+      let response = await fetch(host + "/quizzes", request);
+      let result = await response.json();
+      return result;
+    }
+
+    async function getAllQuizzes() {
+      if (quizzes.length == 0) {
+        quizzes = await retreiveQuizzes();
+      }
+
+      let quiz = document.getElementById("quizzes");
+      quiz.innerHTML = "";
+      
+      for (let q of quizzes) {
+        let div = document.createElement("div");
+        div.className = "card";
+        div.setAttribute("data-id", q.id);
+        div.addEventListener("click", () => startQuiz(q))
+        let innerHtml = ` <div class="container">
+                          <h4><b>${q.id}</b></h4> 
+                          <p >${q.title}</p>
+                          <p>${q.questions.length} questions</p>
+                        </div> `;
+        div.innerHTML = innerHtml;
+        quiz.appendChild(div);
+      }
+    }
+
+    async function startQuiz(quiz) {
+      currentQuizIndex = quizzes.findIndex(q => q.id === quiz.id);
+      currentQuestionIndex = 0;
+      hideNavbar();
+      document.getElementById("quizzes").innerHTML = "";
+      document.getElementById("quizzes").style.display = "none";
+      selectedAnswers = new Array(quiz.questions.length).fill(null);
+      questionScores = new Array(quiz.questions.length).fill(0);
+      displayQuestion();
+    }
+
+    function showNavbar() {
+      navbar.style.display = "block";
+    }
+
+    function hideNavbar() {
+      navbar.style.display = "none";
+      quizContainer.style.display = "block";
+    }
+
+    function displayQuestion() {
+      let currentQuiz = quizzes[currentQuizIndex];
+      let questions = currentQuiz.questions;
+      quizQuestions = questions;
+      let question = questions[currentQuestionIndex];
+
+      optionsContainer.innerHTML = `<div class = "question-card">
+                                      <img src="https://midterm-latest-vz19.onrender.com/questions/${question.id}/image" alt="question" style="width:100%">
+                                      <div class="container">
+                                        <h4><b>${question.id}</b></h4> 
+                                        <p>${question.description}</p>
+                                        <form>
+                                            <input type="radio" id="q${question.id}OptionA" name="q${question.id}Answer" value="A" ${selectedAnswers[currentQuestionIndex] === question.choices[0] ? "checked" : ""}>
+                                            <label for="q${question.id}OptionA">${question.choices[0]}</label><br>
+                              
+                                            <input type="radio" id="q${question.id}OptionB" name="q${question.id}Answer" value="B" ${selectedAnswers[currentQuestionIndex] === question.choices[1] ? "checked" : ""}>
+                                            <label for="q${question.id}OptionB">${question.choices[1]}</label><br>
+                              
+                                            <input type="radio" id="q${question.id}OptionC" name="q${question.id}Answer" value="C" ${selectedAnswers[currentQuestionIndex] === question.choices[2] ? "checked" : ""}>
+                                            <label for="q${question.id}OptionC">${question.choices[2]}</label><br>       
+                                        </form> 
+                                      </div>
+                                    </div>
+                                    <div class = "container-bottom">
+                                      <div class = "previous-button">
+                                        <button id = "prevButton" onclick = "prevQuestion()"> Previous </button>
+                                      </div>
+                                      <div class = "question-count">
+                                        <h5> (Question ${currentQuestionIndex + 1} out of ${questions.length}) </h5>
+                                      </div>
+                                      <div class = "next-button">
+                                        <button id = "nextButton" onclick = "nextQuestion()"> Next </button>
+                                      </div>
+                                    </div>`;
+
+      let prevButton = document.querySelector(".previous-button button");
+      let nextButton = document.querySelector(".next-button button");
+
+      prevButton.style.display = currentQuestionIndex === 0 ? "none" : "block";
+      nextButton.style.display = "block";
+      
+      document.getElementById("quizzes").style.display = "none";
+    }
+
+    function nextQuestion() {
+      if (currentQuestionIndex < (quizQuestions.length - 1)) {
+        calculateHiddenScore();
+        currentQuestionIndex++;
+        displayQuestion();
+      }
+      else {
+        calculateHiddenScore();
+        displayScore();
+      }
+    }
+
+    function prevQuestion() {
+      if (currentQuestionIndex > 0) {
+        currentQuestionIndex--;
+        displayQuestion();
+      }
+    }
+
+    function calculateHiddenScore() {
+      let ques = quizQuestions[currentQuestionIndex];
+      let selectedAnswer = getSelectedAnswer(ques.id, currentQuestionIndex);
+      if (selectedAnswer === ques.answer) {
+        questionScores[currentQuestionIndex] = 1;
+      }
+      else {
+        questionScores[currentQuestionIndex] = 0;
+      }
+    }
+
+    function displayScore() {
+      let score = 0;
+      for (let scored of questionScores) {
+        if (scored === 1) {
+          score++;
+        }
+      }
+      
+      let quizTitle = quizzes[currentQuizIndex].title;
+      let finalScreen = document.getElementById("final-screen");
+
+      finalScreen.innerHTML =  `<h3> You completed the quiz "${quizTitle}". </h3> 
+                                <h3> You scored ${score} out of ${quizQuestions.length}. </h3>`;
+
+      showNavbar();
+      hideQuiz();
+    }
+
+    function getSelectedAnswer(qId, position) {
+      let radioButtonName = `q${qId}Answer`;
+      let radioButtonGroup = document.getElementsByName(radioButtonName);
+      for (let radioButton of radioButtonGroup) {
+        if (radioButton.checked) {
+          let selectedAnswer = document.querySelector(`label[for=${radioButton.id}]`).textContent;
+          selectedAnswers[position] = selectedAnswer;
+          return selectedAnswer;
+        }
+      }
+      return null;
+    }
+
+    function hideQuiz() {
+      quizContainer.style.display = "none";
+    }
+
+  </script>
 </body>
 </html>

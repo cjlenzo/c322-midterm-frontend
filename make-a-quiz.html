@@ -1,11 +1,213 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang = "en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset = "UTF-8">
+  <meta name = "viewport" content = "width=device-width, initial-scale=1.0">
   <title>Document</title>
+  <link rel = "stylesheet" href = "navbar.css">
+  <link rel = "stylesheet" href = "general.css">
+  <link rel = "stylesheet" href = "containers.css">
 </head>
 <body>
-  
+  <ul class = "topnav">
+    <li><a href = "index.html">Home</a></li>
+    <li><a href = "add-question.html">Add questions</a></li>
+    <li><a class = "active" href = "make-a-quiz.html">Create a quiz</a></li>
+    <li><a href = "take-a-quiz.html">Take a quiz</a></li>
+    <li class = "right"><a href = "#about">About</a></li>
+  </ul>
+
+  <div class = "container">
+    <div class = "left-container">
+      <h3> Questions Bank </h3>
+      <h2> Click on a question to add it to the quiz. </h2>
+      <div id = "quiz-questions">
+
+      </div>
+    </div>
+    <div class = "right-container">
+      <h3 id = "quiz-count"> The new quiz (0 questions) </h3>
+      </br>
+      <label> Quiz title: </label>
+      <input id = "quiz-title"></input>
+      </br>
+      <button onclick = "saveChanges()"> Save your changes </button>
+      </br>
+      <button onclick = "saveAndStartNewQuiz()"> Save your changes and start a new quiz </button>
+      </br>
+      <p><b> If you want to remove a question from the quiz, you can click on the question here and it will be removed from the quiz. </b></p>
+      <div id = "selected-quiz-questions">
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+
+    host = "https://midterm-latest-vz19.onrender.com";
+    let questions = [];
+    let selectedQuestions = [];
+    getAllQuestions();
+
+    let selectedQuizQuestions = document.getElementById("selected-quiz-questions");
+    selectedQuizQuestions.addEventListener("click", function(event) {
+      let clickedCard = event.target.closest(".card");
+      if (clickedCard) {
+        let questionId = clickedCard.getAttribute("data-id");
+        let indexToRemove = selectedQuestions.findIndex(question => question.id.toString() === questionId);
+        clickedCard.remove();
+        selectedQuestions.splice(indexToRemove, 1);
+        updateQuizList();
+      }
+    });
+
+    window.addEventListener("beforeunload", function() {
+      localStorage.removeItem("quizId");
+    });
+
+    async function retreiveQuestions() {
+      let request = {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json"
+        }
+      }
+      let response = await fetch(host + "/questions", request);
+      let result = await response.json();
+      return result;
+    }
+
+    async function getAllQuestions() {
+      if (questions.length == 0) {
+        questions = await retreiveQuestions();
+      }
+
+      let quizQuestions = document.getElementById("quiz-questions");
+      quizQuestions.innerHTML = "";
+      
+      for (let question of questions) {
+        let div = document.createElement("div");
+        div.className = "card";
+        div.setAttribute("data-id", question.id);
+        div.addEventListener("click", function() {
+          addQuestion(question);
+        });
+        let innerHtml = ` <img src="https://midterm-latest-vz19.onrender.com/questions/${question.id}/image" alt="question" style="width:100%">
+                          <div class="container">
+                          <h4><b>${question.id}</b></h4> 
+                          <p>${question.description}</p>
+                          <form>
+                            <input type="radio" id="q${question.id}ptionA" name="q2Answer" value="A">
+                            <label for="q${question.id}ptionA">${question.choices[0]}</label><br>
+
+                            <input type="radio" id="q${question.id}ptionB" name="q2Answer" value="B">
+                            <label for="q${question.id}ptionB">${question.choices[1]}</label><br>
+
+                            <input type="radio" id="q${question.id}ptionC" name="q2Answer" value="C">
+                            <label for="q${question.id}ptionC">${question.choices[2]}</label><br>       
+                          </form> 
+                        </div> `;
+        div.innerHTML = innerHtml;
+        quizQuestions.appendChild(div);
+      }
+    }
+
+    function addQuestion(question) {
+      let index = selectedQuestions.findIndex(q => q.id.toString() === question.id.toString());
+      if (index === -1) {
+        selectedQuestions.push(question);
+      }
+      console.log(selectedQuestions);
+      updateQuizList();
+    }
+
+    function updateQuizList() {
+      let selected = document.getElementById("selected-quiz-questions");
+      selected.innerHTML = "";
+      for (let i = 0; i < selectedQuestions.length; i++) {
+        let question = selectedQuestions[i];
+        let div = document.createElement("div");
+        div.className = "card";
+        div.setAttribute("data-id", question.id);
+        let innerHtml = ` <img src="https://midterm-latest-vz19.onrender.com/questions/${question.id}/image" alt="question" style="width:100%">
+                          <div class="container">
+                          <h4><b>${question.id}</b></h4> 
+                          <p>${question.description}</p>
+                          <form>
+                            <input type="radio" id="q${question.id}ptionA" name="q2Answer" value="A">
+                            <label for="q${question.id}ptionA">${question.choices[0]}</label><br>
+
+                            <input type="radio" id="q${question.id}ptionB" name="q2Answer" value="B">
+                            <label for="q${question.id}ptionB">${question.choices[1]}</label><br>
+
+                            <input type="radio" id="q${question.id}ptionC" name="q2Answer" value="C">
+                            <label for="q${question.id}ptionC">${question.choices[2]}</label><br>       
+                          </form> 
+                        </div> `;
+        div.innerHTML = innerHtml;
+        selected.appendChild(div);
+      }
+
+      let quizCount = document.getElementById("quiz-count");
+      quizCount.textContent = `The new quiz (${selectedQuestions.length} questions)`;
+    }
+
+    async function saveChanges() {
+      let quizTitle = document.getElementById("quiz-title").value;
+      if (selectedQuestions.length === 0 || !quizTitle) {
+        alert("Make sure you have added questions, and you have created a title for the quiz!")
+        return;
+      }
+
+      let requestMethod = "POST";
+      let quizId = localStorage.getItem("quizId");
+      if (quizId !== null) {
+        quizId = parseInt(quizId);
+        if (!isNaN(quizId)) {
+          requestMethod = "PUT";
+        }
+      }
+
+      let questionIDs = selectedQuestions.map(question => question.id);
+
+      let body = {
+        title: quizTitle,
+        questionIds: questionIDs
+      }
+
+      let request = {
+        method: requestMethod,
+        headers: {
+          "Content-Type":"application/json",
+        },
+        body: JSON.stringify(body)
+      }
+
+      try {
+        let response = await fetch(`${host}/quizzes${quizId ? `/${quizId}` : ''}`, request);
+        if (response.ok) {
+          console.log("Quiz was sent and added successfully!");
+          let responseData = await response.json();
+          if (requestMethod === "POST") {
+            localStorage.setItem("quizId", responseData);
+          }
+        }
+        else {
+          console.log("Failed to save quiz.");
+        }
+      }
+      catch (error) {
+        console.error("ERROR: ", error);
+        alert("An error occurred.");
+      }
+    }
+
+    async function saveAndStartNewQuiz() {
+      await saveChanges();
+      localStorage.removeItem("quizId");
+      window.location.reload();
+    }
+    
+  </script>
 </body>
 </html>

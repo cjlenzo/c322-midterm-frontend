@@ -1,0 +1,77 @@
+.container {
+    width: 100%;
+}
+
+.right-container {
+    width: 28%;
+    float: right;
+    text-align: left;
+    padding: 10px;
+}
+
+.left-container {
+    width: 68%;
+    float: left;
+    text-align: left;
+    border-color: orange;
+    border-width: 2px;
+    border-style: solid;
+    padding: 10px;
+}
+
+.card {
+    box-shadow: 0 10px 8px 0 rgba(0, 0, 0, 0.2);
+    transition: 0.3s;
+    width: 250px;
+    border-radius: 5px;
+    margin: 10px;
+    display: inline-block;
+  }
+
+.card:hover {
+    box-shadow: 0 8px 16px 0 rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+}
+
+.question-card {
+    box-shadow: 0 10px 8px 0 rgba(0, 0, 0, 0.2);
+    transition: 0.3s;
+    width: 600px;
+    border-radius: 5px;
+    margin: 10px auto;
+    display: block;
+}
+
+.previous-button,
+.next-button {
+    display: inline-block;
+    width: 30%;
+    flex: 1;
+}
+
+.question-count {
+    display: inline-block;
+    width: 33%;
+    text-align: center;
+}
+
+.previous-button {
+    margin-right: auto;
+}
+
+.next-button {
+    margin-left: auto;
+}
+
+.container-bottom {
+    width: 600px;
+    margin: auto;
+    overflow: hidden;
+    text-align: center;
+    display: flex;
+}
+
+.final-container {
+    width: 100%;
+    text-align: center;
+}
